@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#06b6d4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KryptoBot">
+<meta name="description" content="Krypto-Bot v5.0 — Multi-Strategie Trading Dashboard">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<title>Krypto-Bot v5.0</title>
+<style>
+:root {
+  --bg: #0a0e17; --bg2: #111827; --bg3: #1a2235; --bg4: #0f1729;
+  --text: #e2e8f0; --muted: #8892a4; --border: #2d3748;
+  --green: #10b981; --red: #ef4444; --blue: #3b82f6;
+  --orange: #f59e0b; --purple: #8b5cf6; --cyan: #06b6d4;
+  --green-bg: rgba(16,185,129,.12); --red-bg: rgba(239,68,68,.12);
+  --blue-bg: rgba(59,130,246,.12); --orange-bg: rgba(245,158,11,.12);
+  --purple-bg: rgba(139,92,246,.12); --cyan-bg: rgba(6,182,212,.12);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  min-height: -webkit-fill-available;
+  padding-bottom: calc(60px + var(--safe-bottom));
+  overscroll-behavior: none;
+}
+
+/* ============ HEADER ============ */
+.header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+.header h1 span { color: var(--cyan); }
+.header-right { display: flex; gap: 10px; align-items: center; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; flex-shrink: 0; }
+.status-dot.dead { background: var(--red); animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.cycle-badge { background: var(--bg3); padding: 3px 8px; border-radius: 4px; font-size: 10px; color: var(--muted); }
+
+/* ============ INSTALL BANNER ============ */
+.install-banner {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  padding: 12px 16px; display: none; align-items: center; justify-content: space-between;
+  color: white; font-size: 13px; font-weight: 500;
+}
+.install-banner.show { display: flex; }
+.install-btn { background: white; color: #0a0e17; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
+.install-dismiss { background: none; border: none; color: rgba(255,255,255,.7); font-size: 18px; cursor: pointer; padding: 4px 8px; }
+
+/* ============ KILL BANNER ============ */
+.kill-banner { background: var(--red); color: white; text-align: center; padding: 10px 16px; font-weight: 700; font-size: 13px; display: none; }
+.kill-banner.active { display: block; }
+
+/* ============ TOP CARDS ============ */
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 12px 12px 0; }
+.card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  transition: transform .15s;
+}
+.card:active { transform: scale(0.97); }
+.card-title { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 4px; }
+.card-value { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.card-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.green { color: var(--green); } .red { color: var(--red); } .blue { color: var(--blue); }
+.orange { color: var(--orange); } .purple { color: var(--purple); } .cyan { color: var(--cyan); }
+
+/* ============ TABS ============ */
+.tabs {
+  display: flex; padding: 12px 12px 0; gap: 6px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all .2s; user-select: none;
+}
+.tab.active { background: var(--cyan-bg); border-color: var(--cyan); color: var(--cyan); }
+
+/* ============ SECTIONS ============ */
+.tab-content { display: none; padding: 12px; }
+.tab-content.active { display: block; }
+.section {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; margin-bottom: 10px;
+}
+.section-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 600;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.section-body { padding: 10px 14px; }
+
+/* ============ TABLE ============ */
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th {
+  text-align: left; padding: 5px 6px; color: var(--muted);
+  font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; font-size: 9px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+td { padding: 6px; border-bottom: 1px solid rgba(45,55,72,.3); white-space: nowrap; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ============ BADGES ============ */
+.badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.badge-long { background: var(--green-bg); color: var(--green); }
+.badge-short { background: var(--red-bg); color: var(--red); }
+.badge-regime { padding: 4px 10px; border-radius: 6px; font-size: 11px; }
+.badge-low { background: var(--cyan-bg); color: var(--cyan); }
+.badge-medium { background: var(--orange-bg); color: var(--orange); }
+.badge-high { background: var(--red-bg); color: var(--red); }
+.badge-neutral { background: var(--green-bg); color: var(--green); }
+
+/* ============ META GRID ============ */
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meta-card { background: var(--bg3); border-radius: 8px; padding: 10px; }
+.meta-name { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.meta-weight { font-size: 22px; font-weight: 700; margin: 3px 0; }
+.meta-stats { font-size: 9px; color: var(--muted); line-height: 1.5; }
+.bar-bg { background: var(--bg); border-radius: 3px; height: 6px; margin-top: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+
+/* ============ HEDGE BAR ============ */
+.hedge-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; margin: 8px 0; }
+.hedge-long { background: var(--green); transition: width .5s ease; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
+.hedge-short { background: var(--red); transition: width .5s ease; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; }
+
+/* ============ CONTROLS ============ */
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ctrl-btn {
+  padding: 14px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .15s; text-align: center; user-select: none;
+}
+.ctrl-btn:active { transform: scale(0.95); }
+.ctrl-btn.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.ctrl-btn.danger { border-color: var(--red); color: var(--red); }
+.ctrl-btn.danger:active { background: var(--red-bg); }
+.ctrl-btn .icon { font-size: 24px; display: block; margin-bottom: 4px; }
+.ctrl-btn .label { font-size: 10px; color: var(--muted); }
+
+.settings-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid rgba(45,55,72,.3);
+}
+.settings-label { font-size: 13px; }
+.settings-value { font-size: 13px; color: var(--cyan); font-weight: 600; }
+
+/* ============ SERVER INPUT ============ */
+.server-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+.server-input {
+  flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text); font-size: 13px; font-family: inherit;
+}
+.server-input:focus { outline: none; border-color: var(--cyan); }
+.server-connect-btn {
+  padding: 10px 16px; border-radius: 8px; border: none;
+  background: var(--cyan); color: white; font-weight: 700; font-size: 12px;
+  cursor: pointer; flex-shrink: 0;
+}
+
+/* ============ EQUITY MINI CHART ============ */
+.equity-chart { width: 100%; height: 80px; margin-top: 8px; }
+.equity-chart canvas { width: 100%; height: 100%; }
+
+/* ============ BOTTOM NAV ============ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid var(--border);
+  display: flex; z-index: 100;
+  padding-bottom: var(--safe-bottom);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 8px 0; cursor: pointer; transition: color .2s; color: var(--muted);
+  user-select: none; -webkit-user-select: none;
+}
+.nav-item.active { color: var(--cyan); }
+.nav-item .nav-icon { font-size: 20px; margin-bottom: 2px; }
+.nav-item .nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.5px; }
+
+/* ============ DESKTOP TWEAKS ============ */
+@media (min-width: 768px) {
+  .cards { grid-template-columns: repeat(4, 1fr); padding: 16px 24px 0; }
+  .tabs { padding: 16px 24px 0; }
+  .tab-content { padding: 16px 24px; }
+  .meta-grid { grid-template-columns: repeat(4, 1fr); }
+  .controls-grid { grid-template-columns: repeat(4, 1fr); }
+  .bottom-nav { display: none; }
+  body { padding-bottom: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="installBanner">
+  <span>📱 Als App installieren</span>
+  <div>
+    <button class="install-btn" id="installBtn">Installieren</button>
+    <button class="install-dismiss" id="installDismiss">&times;</button>
+  </div>
+</div>
+
+<!-- KILL BANNER -->
+<div class="kill-banner" id="killBanner">⛔ BOT GESTOPPT — <span id="killReason"></span></div>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>KRYPTO-BOT <span>v5.0</span></h1>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="cycle-badge">Zyklus <b id="cycleNum">0</b></span>
+  </div>
+</div>
+
+<!-- TOP CARDS -->
+<div class="cards">
+  <div class="card">
+    <div class="card-title">Equity</div>
+    <div class="card-value" id="equity">$0</div>
+    <div class="card-sub" id="totalReturn">—</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Positionen</div>
+    <div class="card-value" id="openPos">0</div>
+    <div class="card-sub" id="dailyPnl">—</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Regime</div>
+    <div class="card-value"><span class="badge badge-regime badge-medium" id="regimeBadge">—</span></div>
+    <div class="card-sub" id="regimeDesc" style="font-size:9px;margin-top:6px">—</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Drawdown</div>
+    <div class="card-value" id="maxDd">0.0%</div>
+    <div class="card-sub" id="winRate">—</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-tab="positions">Positionen</div>
+  <div class="tab" data-tab="meta">Meta</div>
+  <div class="tab" data-tab="hedge">Hedge</div>
+  <div class="tab" data-tab="funding">Funding</div>
+  <div class="tab" data-tab="history">History</div>
+  <div class="tab" data-tab="controls">Steuerung</div>
+</div>
+
+<!-- TAB: POSITIONS -->
+<div class="tab-content active" id="tab-positions">
+  <div class="section">
+    <div class="section-header"><span>Aktive Positionen</span><span class="muted" id="posCount">0</span></div>
+    <div class="section-body scroll-x">
+      <table><thead>
+        <tr><th>Symbol</th><th>Seite</th><th>Strategie</th><th>Entry</th><th>PnL</th><th>$</th></tr>
+      </thead><tbody id="posTable"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Keine Positionen</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: META -->
+<div class="tab-content" id="tab-meta">
+  <div class="section">
+    <div class="section-header"><span>🧠 Meta-Allocator</span></div>
+    <div class="section-body"><div class="meta-grid" id="metaGrid">
+      <div class="meta-card"><div class="meta-name">Warte auf Daten...</div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- TAB: HEDGE -->
+<div class="tab-content" id="tab-hedge">
+  <div class="section">
+    <div class="section-header"><span>⚖️ Long/Short Hedge</span><span class="badge" id="hedgeStatus">—</span></div>
+    <div class="section-body">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span class="green" id="longExp">Long: $0</span>
+        <span class="red" id="shortExp">Short: $0</span>
+      </div>
+      <div class="hedge-bar">
+        <div class="hedge-long" id="hedgeLong" style="width:50%">50%</div>
+        <div class="hedge-short" id="hedgeShort" style="width:50%">50%</div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted)" id="hedgeRatio">Ratio: 50.0% Long</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: FUNDING -->
+<div class="tab-content" id="tab-funding">
+  <div class="section">
+    <div class="section-header"><span>💰 Funding Rate Arbitrage</span></div>
+    <div class="section-body scroll-x">
+      <table><thead><tr><th>Symbol</th><th>Rate</th><th>APY</th></tr></thead>
+      <tbody id="fundingTable"><tr><td colspan="3" style="color:var(--muted);text-align:center;padding:20px">Warte auf Daten...</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: HISTORY -->
+<div class="tab-content" id="tab-history">
+  <div class="section">
+    <div class="section-header"><span>📜 Trade History</span><span class="muted" id="totalTrades">0</span></div>
+    <div class="section-body scroll-x">
+      <table><thead>
+        <tr><th>Symbol</th><th>Seite</th><th>Strategie</th><th>PnL</th><th>$</th><th>Grund</th></tr>
+      </thead><tbody id="tradeTable"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Keine Trades</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: CONTROLS -->
+<div class="tab-content" id="tab-controls">
+  <!-- Server Connection -->
+  <div class="section">
+    <div class="section-header"><span>🔗 Server-Verbindung</span></div>
+    <div class="section-body">
+      <div class="server-input-group">
+        <input class="server-input" id="wsUrl" type="text" placeholder="ws://192.168.1.x:8765">
+        <button class="server-connect-btn" id="connectBtn">Verbinden</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted)" id="connStatus">Nicht verbunden</div>
+    </div>
+  </div>
+
+  <!-- Bot Controls -->
+  <div class="section">
+    <div class="section-header"><span>🎮 Bot-Steuerung</span></div>
+    <div class="section-body">
+      <div class="controls-grid">
+        <div class="ctrl-btn" id="btnStart" onclick="sendCmd('start')">
+          <span class="icon">▶️</span>Start<span class="label">Bot starten</span>
+        </div>
+        <div class="ctrl-btn danger" id="btnStop" onclick="sendCmd('stop')">
+          <span class="icon">⏹️</span>Stop<span class="label">Bot stoppen</span>
+        </div>
+        <div class="ctrl-btn" id="btnPause" onclick="sendCmd('pause')">
+          <span class="icon">⏸️</span>Pause<span class="label">Pausieren</span>
+        </div>
+        <div class="ctrl-btn danger" id="btnCloseAll" onclick="sendCmd('close_all')">
+          <span class="icon">🚨</span>Close All<span class="label">Alle schließen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strategy Toggles -->
+  <div class="section">
+    <div class="section-header"><span>📊 Strategien</span></div>
+    <div class="section-body">
+      <div class="settings-row"><span class="settings-label">Trend Following</span><span class="settings-value" id="stTrend">AN</span></div>
+      <div class="settings-row"><span class="settings-label">Mean Reversion</span><span class="settings-value" id="stMean">AN</span></div>
+      <div class="settings-row"><span class="settings-label">Funding Arbitrage</span><span class="settings-value" id="stFunding">AN</span></div>
+      <div class="settings-row"><span class="settings-label">Momentum Breakout</span><span class="settings-value" id="stMomentum">AN</span></div>
+      <div class="settings-row"><span class="settings-label">Meta-Allocator</span><span class="settings-value" id="stMeta">AN</span></div>
+      <div class="settings-row"><span class="settings-label">Hedge Manager</span><span class="settings-value" id="stHedge">AN</span></div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="section">
+    <div class="section-header"><span>🔔 Benachrichtigungen</span></div>
+    <div class="section-body">
+      <div class="ctrl-btn" style="width:100%" id="btnNotify" onclick="requestNotifications()">
+        <span class="icon">🔔</span>Push-Benachrichtigungen aktivieren
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px" id="notifyStatus">Status: nicht aktiviert</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" data-tab="positions"><span class="nav-icon">📊</span><span class="nav-label">Positionen</span></div>
+  <div class="nav-item" data-tab="meta"><span class="nav-icon">🧠</span><span class="nav-label">Meta</span></div>
+  <div class="nav-item" data-tab="hedge"><span class="nav-icon">⚖️</span><span class="nav-label">Hedge</span></div>
+  <div class="nav-item" data-tab="history"><span class="nav-icon">📜</span><span class="nav-label">History</span></div>
+  <div class="nav-item" data-tab="controls"><span class="nav-icon">⚙️</span><span class="nav-label">Settings</span></div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let ws = null;
+let reconnectTimer = null;
+let lastState = {};
+let notificationsEnabled = false;
+
+// ============================================================
+// PWA: SERVICE WORKER
+// ============================================================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(reg => console.log('SW registered', reg.scope))
+    .catch(err => console.error('SW failed', err));
+}
+
+// ============================================================
+// PWA: INSTALL PROMPT
+// ============================================================
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const result = await deferredPrompt.userChoice;
+  console.log('Install:', result.outcome);
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+document.getElementById('installDismiss').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  console.log('PWA installed!');
+});
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tabName));
+}
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchTab(n.dataset.tab)));
+
+// ============================================================
+// WEBSOCKET CONNECTION
+// ============================================================
+function connect(url) {
+  if (ws) { ws.close(); clearTimeout(reconnectTimer); }
+  
+  const wsUrl = url || document.getElementById('wsUrl').value || `ws://${location.hostname}:8765`;
+  document.getElementById('wsUrl').value = wsUrl;
+  document.getElementById('connStatus').textContent = `Verbinde mit ${wsUrl}...`;
+  localStorage.setItem('kbot_ws_url', wsUrl);
+  
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch(e) {
+    document.getElementById('connStatus').textContent = `Fehler: ${e.message}`;
+    return;
+  }
+  
+  ws.onopen = () => {
+    document.getElementById('statusDot').classList.remove('dead');
+    document.getElementById('connStatus').textContent = `Verbunden mit ${wsUrl}`;
+    document.getElementById('connectBtn').textContent = 'Trennen';
+    clearTimeout(reconnectTimer);
+  };
+  
+  ws.onclose = () => {
+    document.getElementById('statusDot').classList.add('dead');
+    document.getElementById('connStatus').textContent = 'Getrennt — Verbinde neu in 5s...';
+    document.getElementById('connectBtn').textContent = 'Verbinden';
+    reconnectTimer = setTimeout(() => connect(wsUrl), 5000);
+  };
+  
+  ws.onerror = () => ws.close();
+  ws.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      lastState = data;
+      updateUI(data);
+    } catch(err) { console.error('Parse error', err); }
+  };
+}
+
+document.getElementById('connectBtn').addEventListener('click', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.close();
+    clearTimeout(reconnectTimer);
+    document.getElementById('connStatus').textContent = 'Manuell getrennt';
+  } else {
+    connect();
+  }
+});
+
+// Auto-connect on load
+const savedUrl = localStorage.getItem('kbot_ws_url');
+if (savedUrl) {
+  document.getElementById('wsUrl').value = savedUrl;
+  setTimeout(() => connect(savedUrl), 500);
+} else {
+  setTimeout(() => connect(`ws://${location.hostname}:8765`), 500);
+}
+
+// ============================================================
+// SEND COMMANDS TO BOT
+// ============================================================
+function sendCmd(cmd) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ command: cmd }));
+    // Visual feedback
+    const btn = document.getElementById('btn' + cmd.charAt(0).toUpperCase() + cmd.slice(1));
+    if (btn) { btn.style.opacity = '0.5'; setTimeout(() => btn.style.opacity = '1', 300); }
+  }
+}
+
+// ============================================================
+// PUSH NOTIFICATIONS
+// ============================================================
+async function requestNotifications() {
+  if (!('Notification' in window)) {
+    document.getElementById('notifyStatus').textContent = 'Browser unterstützt keine Benachrichtigungen';
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  notificationsEnabled = perm === 'granted';
+  document.getElementById('notifyStatus').textContent = perm === 'granted'
+    ? 'Aktiviert — du bekommst Trade-Alerts'
+    : 'Abgelehnt — bitte in Browser-Einstellungen erlauben';
+  document.getElementById('btnNotify').classList.toggle('active', notificationsEnabled);
+}
+
+function showNotification(title, body) {
+  if (!notificationsEnabled) return;
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(title, {
+        body, icon: 'icons/icon-192x192.png', badge: 'icons/icon-96x96.png',
+        vibrate: [100, 50, 100], tag: 'kbot-trade',
+      });
+    });
+  } else {
+    new Notification(title, { body, icon: 'icons/icon-192x192.png' });
+  }
+}
+
+// ============================================================
+// UI UPDATE
+// ============================================================
+let prevTradeCount = 0;
+
+function updateUI(s) {
+  const p = s.portfolio || {};
+  
+  // Top cards
+  document.getElementById('cycleNum').textContent = s.cycle || 0;
+  document.getElementById('equity').textContent = `$${(p.equity||0).toLocaleString('en',{maximumFractionDigits:0})}`;
+  const retEl = document.getElementById('totalReturn');
+  retEl.textContent = p.total_return || '—';
+  retEl.className = `card-sub ${(p.total_return_pct||0)>=0?'green':'red'}`;
+  document.getElementById('openPos').textContent = p.open_positions || 0;
+  const dpEl = document.getElementById('dailyPnl');
+  dpEl.textContent = `Heute: $${(p.daily_pnl||0).toFixed(0)}`;
+  dpEl.className = `card-sub ${(p.daily_pnl||0)>=0?'green':'red'}`;
+  document.getElementById('maxDd').textContent = p.max_drawdown || '0.0%';
+  document.getElementById('winRate').textContent = `WR: ${p.win_rate||'—'} (${p.total_trades||0})`;
+  
+  // Kill
+  if (p.is_killed) {
+    document.getElementById('killBanner').classList.add('active');
+    document.getElementById('killReason').textContent = p.kill_reason;
+  }
+  
+  // Regime
+  const r = s.regime || {};
+  const rb = document.getElementById('regimeBadge');
+  const rtype = r.type || 'medium_vol';
+  rb.textContent = rtype.replace('_vol','').toUpperCase();
+  rb.className = `badge badge-regime badge-${rtype==='low_vol'?'low':rtype==='high_vol'?'high':'medium'}`;
+  document.getElementById('regimeDesc').textContent = (r.description||'').substring(0, 60);
+  
+  // Positions
+  const positions = s.positions || [];
+  const pt = document.getElementById('posTable');
+  if (positions.length === 0) {
+    pt.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Keine Positionen</td></tr>';
+  } else {
+    pt.innerHTML = positions.map(p => `<tr>
+      <td><b>${p.symbol.replace('USDT','')}</b></td>
+      <td><span class="badge badge-${p.side.toLowerCase()}">${p.side}</span></td>
+      <td style="font-size:9px">${p.strategy.replace('_',' ')}</td>
+      <td>${p.entry.toFixed(p.entry>100?0:2)}</td>
+      <td class="${p.pnl_usd>=0?'green':'red'}">${p.pnl_pct}</td>
+      <td class="${p.pnl_usd>=0?'green':'red'}">$${p.pnl_usd.toFixed(0)}</td>
+    </tr>`).join('');
+  }
+  document.getElementById('posCount').textContent = positions.length;
+  
+  // Meta
+  const meta = s.meta || {};
+  const weights = s.meta_weights || {};
+  const colors = {trend_following:'var(--blue)',mean_reversion:'var(--purple)',funding_arbitrage:'var(--green)',momentum_breakout:'var(--orange)'};
+  const labels = {trend_following:'Trend',mean_reversion:'Mean Rev',funding_arbitrage:'Funding',momentum_breakout:'Momentum'};
+  const mg = document.getElementById('metaGrid');
+  const metaEntries = Object.entries(meta);
+  if (metaEntries.length > 0) {
+    mg.innerHTML = metaEntries.map(([name,d]) => {
+      const w = weights[name]||0;
+      const c = colors[name]||'var(--cyan)';
+      return `<div class="meta-card">
+        <div class="meta-name">${labels[name]||name}</div>
+        <div class="meta-weight" style="color:${c}">${d.weight}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${(w*100).toFixed(0)}%;background:${c}"></div></div>
+        <div class="meta-stats">WR ${d.win_rate} | S ${d.sharpe}<br>Trades: ${d.trades} | DD ${d.max_dd}</div>
+      </div>`;
+    }).join('');
+  }
+  
+  // Hedge
+  const h = s.hedge || {};
+  document.getElementById('longExp').textContent = `Long: $${(h.long_exposure||0).toLocaleString('en',{maximumFractionDigits:0})}`;
+  document.getElementById('shortExp').textContent = `Short: $${(h.short_exposure||0).toLocaleString('en',{maximumFractionDigits:0})}`;
+  const total = (h.long_exposure||0) + (h.short_exposure||0);
+  const lp = total > 0 ? (h.long_exposure/total*100) : 50;
+  document.getElementById('hedgeLong').style.width = lp+'%';
+  document.getElementById('hedgeLong').textContent = lp.toFixed(0)+'%';
+  document.getElementById('hedgeShort').style.width = (100-lp)+'%';
+  document.getElementById('hedgeShort').textContent = (100-lp).toFixed(0)+'%';
+  document.getElementById('hedgeRatio').textContent = `Ratio: ${((h.hedge_ratio||0.5)*100).toFixed(1)}% Long`;
+  const hs = document.getElementById('hedgeStatus');
+  hs.textContent = h.status||'—';
+  hs.className = `badge ${h.balanced?'badge-neutral':'badge-short'}`;
+  
+  // Funding
+  const ft = document.getElementById('fundingTable');
+  const rates = s.funding_rates || {};
+  const sorted = Object.entries(rates).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if (sorted.length > 0) {
+    ft.innerHTML = sorted.map(([sym,rate]) => {
+      const apy = (rate*3*365*100).toFixed(1);
+      const isArb = (s.funding_arbs||{})[sym];
+      return `<tr${isArb?' style="background:var(--green-bg)"':''}>
+        <td><b>${sym.replace('USDT','')}</b>${isArb?' 🟢':''}</td>
+        <td class="${rate>=0?'green':'red'}">${(rate*100).toFixed(4)}%</td>
+        <td class="${rate>=0?'green':'red'}">${apy}%</td>
+      </tr>`;
+    }).join('');
+  }
+  
+  // Trade history
+  const trades = s.trades || [];
+  const tt = document.getElementById('tradeTable');
+  document.getElementById('totalTrades').textContent = `${p.total_trades||0} trades`;
+  if (trades.length > 0) {
+    tt.innerHTML = trades.slice().reverse().map(t => `<tr>
+      <td><b>${t.symbol.replace('USDT','')}</b></td>
+      <td><span class="badge badge-${t.side.toLowerCase()}">${t.side}</span></td>
+      <td style="font-size:9px">${t.strategy.replace('_',' ')}</td>
+      <td class="${t.pnl_usd>=0?'green':'red'}">${t.pnl_pct}</td>
+      <td class="${t.pnl_usd>=0?'green':'red'}">$${t.pnl_usd.toFixed(0)}</td>
+      <td style="font-size:9px">${t.reason}</td>
+    </tr>`).join('');
+  }
+  
+  // Push notification on new trade
+  if (trades.length > prevTradeCount && prevTradeCount > 0) {
+    const latest = trades[trades.length - 1];
+    const emoji = latest.pnl_usd >= 0 ? '✅' : '❌';
+    showNotification(
+      `${emoji} ${latest.side} ${latest.symbol}`,
+      `PnL: ${latest.pnl_pct} ($${latest.pnl_usd.toFixed(2)}) — ${latest.reason}`
+    );
+  }
+  prevTradeCount = trades.length;
+}
+</script>
+</body>
+</html>
